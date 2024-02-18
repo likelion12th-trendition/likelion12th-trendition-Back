@@ -9,4 +9,4 @@ class GoalForm(forms.ModelForm):
 class SubGoalForm(forms.ModelForm):
     class Meta:
         model = SubGoal
-        fields = ['goal', 'title', 'is_completed']
+        fields = ['is_completed']
