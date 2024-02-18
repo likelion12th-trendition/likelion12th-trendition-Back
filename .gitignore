@@ -3,6 +3,7 @@
 
 ### Django ###
 secrets.json
+/secrets.json
 *.log
 *.pot
 *.pyc
