@@ -47,10 +47,11 @@ class MyPageSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField()
     followers = serializers.SerializerMethodField()
     followings = serializers.SerializerMethodField()
+    profileImage = serializers.ImageField(read_only=True)
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'followers', 'followings']
+        fields = ['username', 'followers', 'followings', 'profileImage']
 
     def get_followers(self, obj):
         return obj.follower.count()
