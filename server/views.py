@@ -1,12 +1,19 @@
 from rest_framework.response import Response
 from rest_framework import status
+from join.serializers import LoginSerializer
 from .forms import GoalForm, SubGoalForm
 from .models import Goal, SubGoal
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import authentication_classes
+from rest_framework.authtoken.models import Token
+from rest_framework.views import APIView
 from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import IsAuthenticated
+from join.authentication import BearerTokenAuthentication
+from django.shortcuts import get_object_or_404
 
 # 전체 목표, 세부 목표 불러오기 + 성공 백분률
-@login_required
+@authentication_classes([BearerTokenAuthentication])
 @api_view(["GET"])
 def home(request):
     if request.method == "GET":
@@ -22,13 +29,13 @@ def home(request):
                         'completion_rate' : completion_rate}
             goals_data.append(goal_data)
         return Response(goals_data)
-# 목표
-@login_required
-@api_view(['POST', 'PUT', 'DELETE'])
-def goal(request, goal_id=None):
-    # 새로운 목표 생성
+
+# 새로운 목표 생성목표
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['POST'])
+def create_goal(request):
     if request.method == "POST":
-        form = GoalForm(request.POST)
+        form = GoalForm(request.data)
         if form.is_valid():
             goal = form.save(commit=False)
             goal.user = request.user
@@ -37,65 +44,78 @@ def goal(request, goal_id=None):
             return Response({'detail': 'Goal created successfully', 'goal_id': goal_id}, status=status.HTTP_201_CREATED)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 목표 수정
+# 목표 수정
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['PUT'])
+def update_goal(request, goal_id):
+    try:
+        goal = Goal.objects.get(id=goal_id, user=request.user)
+    except Goal.DoesNotExist:
+        return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
+    
     if request.method == "PUT":
-        try:
-            goal = Goal.objects.get(pk = goal_id, user=request.user)
-        except Goal.DoesNotExist:
-            return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
         form = GoalForm(request.data, instance=goal)
         if form.is_valid():
             form.save()
             return Response({'detail': 'Goal updated successfully'})
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    # 목표 삭제
-    if request.method == "DELETE":
-        try:
-            goal = Goal.objects.get(pk=goal_id, user=request.user)
-            goal.delete()
-            return Response({'detail': 'Goal deleted successfully'})
-        except Goal.DoesNotExist:
-            return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+
+# 목표 삭제
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['DELETE'])
+def delete_goal(request, goal_id):
+    try:
+        goal = Goal.objects.get(id=goal_id, user=request.user)
+        goal.delete()
+        return Response({'detail': 'Goal deleted successfully'})
+    except Goal.DoesNotExist:
+        return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 # 세부 목표
-@login_required
-@api_view(['POST', 'PUT', 'DELETE'])
-def subgoal(request, goal_id=None, subgoal_id = None):
-    # 새로운 세부 목표 생성
+# 새로운 세부 목표 생성
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['POST'])
+def create_subgoal(request, goal_id):
     if request.method == "POST":
-        try:
-            goal = Goal.objects.get(pk=goal_id, user=request.user)
-        except Goal.DoesNotExist:
-            return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
+        goal = get_object_or_404(Goal, id=goal_id, user=request.user)
+        request.data['goal'] = goal.id
         form = SubGoalForm(request.data)
         if form.is_valid():
-            subgoal = form.save(commit=False)
-            subgoal.goal = goal
-            subgoal.save()
-            subgoal_id = subgoal.id
-            return Response({'detail':"Subgoal created succeessfully", 'subgoal_id': subgoal_id}, status=status.HTTP_201_CREATED)
+            subgoal = form.save()
+            return Response({'detail':"Subgoal created successfully", 'subgoal_id': subgoal.id}, status=status.HTTP_201_CREATED)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 세부 목표 수정
+# 세부 목표 수정
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['PUT'])
+def update_subgoal(request, subgoal_id):
     if request.method == "PUT":
-        try:
-            subgoal = SubGoal.objects.get(pk=subgoal_id, user=request.user)
-        except SubGoal.DoesNotExist:
-            return Response({'detail': "Subgoal not found"}, status=status.HTTP_404_NOT_FOUND)
+        subgoal = get_object_or_404(SubGoal, id=subgoal_id)
+
+        title = request.data.get('title', None)
+        if title is not None:
+            subgoal.title = title
+            
+
+        is_completed = request.data.get('is_completed', None)
+        if is_completed is not None:
+            subgoal.is_completed = is_completed
         
         form = SubGoalForm(request.data, instance=subgoal)
+
         if form.is_valid():
             form.save()
             return Response({'detail': 'Subgoal updated successfully'})
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # 세부 목표 삭제
-    if request.method == "DELETE":
-        try:
-            subgoal = SubGoal.objects.get(pk=subgoal_id, user=request.user)
-        except SubGoal.DoesNotExist:
-            return Response({'detail': "Subgoal not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+# 세부 목표 삭제
+@authentication_classes([BearerTokenAuthentication])
+@api_view(['DELETE'])
+def delete_subgoal(request, subgoal_id):
+    try:
+        subgoal = SubGoal.objects.get(id=subgoal_id)
         subgoal.delete()
         return Response({'detail': 'Subgoal deleted successfully'})
+    except SubGoal.DoesNotExist:
+        return Response({'detail': "Subgoal not found"}, status=status.HTTP_404_NOT_FOUND)
