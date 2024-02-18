@@ -40,3 +40,20 @@ class LoginSerializer(serializers.Serializer):
             return token
         raise serializers.ValidationError( #User가 None인 경우
             {"error": "해당하는 사용자가 존재하지 않습니다."})
+
+
+#마이페이지
+class MyPageSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField()
+    followers = serializers.SerializerMethodField()
+    followings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'followers', 'followings']
+
+    def get_followers(self, obj):
+        return obj.follower.count()
+
+    def get_followings(self, obj):
+        return obj.following.count()
