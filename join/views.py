@@ -92,7 +92,13 @@ class SearchUserView(APIView):
         keyword = request.query_params.get('keyword')  
         if keyword:
             users = CustomUser.objects.filter(username__icontains=keyword)  
-            serializer = MyPageSerializer(users, many=True)
-            return Response(serializer.data)
+            if users.exists(): 
+                serializer = MyPageSerializer(users, many=True)
+                return Response(serializer.data)
+            else:  
+                return Response({"error": "해당 유저는 존재하지 않습니다."})
         else:
             return Response({"error": "검색어가 없습니다."})
+
+
+
