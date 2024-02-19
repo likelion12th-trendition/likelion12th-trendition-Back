@@ -69,16 +69,24 @@ class FollowingUsersView(APIView):
         following_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in request.user.following.all()] 
         return Response(following_users)
 
-
 #나를 팔로우하는 유저 목록
 class FollowerUsersView(APIView):
     authentication_classes = [BearerTokenAuthentication]
     def get(self, request, *args, **kwargs):
         follower_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in request.user.follower.all()] 
         return Response(follower_users)
+    
+#검색
+class SearchView(APIView):
+    authentication_classes = [BearerTokenAuthentication]
+    def get(self, request): 
+        users = CustomUser.objects.all()
+        user_data = [{'username': user.username, 'profileImage': user.profileImage.url} for user in users]
+        return Response(user_data)
+
 
 #유저 검색
-class SearchView(APIView):
+class SearchUserView(APIView):
     authentication_classes = [BearerTokenAuthentication]
     def get(self, request): 
         keyword = request.query_params.get('keyword')  
