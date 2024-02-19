@@ -31,15 +31,21 @@ class LoginView(generics.GenericAPIView):
 #팔로잉
 class FollowView(APIView):
     authentication_classes = [BearerTokenAuthentication]
+    def get(self, request, username):  
+        if request.user.is_authenticated:
+            you = get_object_or_404(CustomUser, username=username)
+            me = request.user
+            if you in me.following.all():
+                return Response("팔로우 상태입니다.", status=status.HTTP_200_OK)
+            else:
+                return Response("언팔로우 상태입니다.", status=status.HTTP_200_OK)
+        else:
+            return Response("로그인이 필요한 서비스입니다.", status=status.HTTP_401_UNAUTHORIZED)
     def post(self, request, username):
-        logging.info(f"Request headers: {request.headers}")
-        logging.info(f"User type: {type(request.user)}")
-
         if request.user.is_authenticated:
             you = get_object_or_404(CustomUser, username=username)  
             me = request.user
 
-            logging.info(f"Before following: {me.following.all()}") # 팔로우 전 following 상태
             if you in me.following.all():
                 me.following.remove(you)
                 you.follower.remove(me)
@@ -47,7 +53,6 @@ class FollowView(APIView):
             else:
                 me.following.add(you)
                 you.follower.add(me)
-                logging.info(f"After following: {me.following.all()}") # 팔로우 후 following 상태
                 return Response("팔로우 했습니다.", status=status.HTTP_200_OK)
         else:
             return Response("로그인이 필요한 서비스입니다.", status=status.HTTP_401_UNAUTHORIZED)
