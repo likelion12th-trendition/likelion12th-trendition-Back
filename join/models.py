@@ -3,6 +3,7 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     username = models.CharField(max_length=30, unique=True)
+    password = models.CharField(max_length=128)
     email = models.EmailField(unique=True)
     phonenumber = models.CharField(max_length=13)
     profileImage = models.ImageField(upload_to='profile/', default='default.png')
