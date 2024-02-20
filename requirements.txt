@@ -4,3 +4,4 @@ django-allauth
 djangorestframework
 djangorestframework-simplejwt
 Pillow
+django-cors-headers

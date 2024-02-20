@@ -9,5 +9,6 @@ urlpatterns = [
     path('mypage/', MyPageView.as_view(), name="mypage_view"), #마이페이지
     path('following/', FollowingUsersView.as_view(), name='following-users'), #내가 팔로우하는 유저 목록
     path('follower/', FollowerUsersView.as_view(), name='follower-users'), #나를 팔로우하는 유저 목록
-    path('search/', SearchView.as_view()), #검색 (/search/?keyword=유저네임 경로로 접속)
+    path('search/', SearchView.as_view()), #검색 
+    path('search_user/', SearchUserView.as_view()), #유저 검색 (/search/?keyword=유저네임 경로로 접속)
 ]

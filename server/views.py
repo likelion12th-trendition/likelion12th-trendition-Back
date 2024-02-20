@@ -1,14 +1,10 @@
 from rest_framework.response import Response
 from rest_framework import status
-from join.serializers import LoginSerializer
 from .forms import GoalForm, SubGoalForm
 from .models import Goal, SubGoal
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes
 from rest_framework.authtoken.models import Token
-from rest_framework.views import APIView
-from django.contrib.auth.decorators import login_required
-from rest_framework.permissions import IsAuthenticated
 from join.authentication import BearerTokenAuthentication
 from django.shortcuts import get_object_or_404
 
@@ -17,7 +13,8 @@ from django.shortcuts import get_object_or_404
 @api_view(["GET"])
 def home(request):
     if request.method == "GET":
-        goals = Goal.objects.filter(user = request.user)
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        goals = Goal.objects.filter(user = user)
         goals_data = []
         for goal in goals:
             subgoals = SubGoal.objects.filter(goal=goal)
@@ -36,9 +33,10 @@ def home(request):
 def create_goal(request):
     if request.method == "POST":
         form = GoalForm(request.data)
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
         if form.is_valid():
             goal = form.save(commit=False)
-            goal.user = request.user
+            goal.user = user
             goal.save()
             goal_id = goal.id
             return Response({'detail': 'Goal created successfully', 'goal_id': goal_id}, status=status.HTTP_201_CREATED)
@@ -49,7 +47,8 @@ def create_goal(request):
 @api_view(['PUT'])
 def update_goal(request, goal_id):
     try:
-        goal = Goal.objects.get(id=goal_id, user=request.user)
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        goal = Goal.objects.get(id=goal_id, user=user)
     except Goal.DoesNotExist:
         return Response({'detail': "Goal not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -65,7 +64,8 @@ def update_goal(request, goal_id):
 @api_view(['DELETE'])
 def delete_goal(request, goal_id):
     try:
-        goal = Goal.objects.get(id=goal_id, user=request.user)
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        goal = Goal.objects.get(id=goal_id, user=user)
         goal.delete()
         return Response({'detail': 'Goal deleted successfully'})
     except Goal.DoesNotExist:
@@ -78,12 +78,17 @@ def delete_goal(request, goal_id):
 @api_view(['POST'])
 def create_subgoal(request, goal_id):
     if request.method == "POST":
-        goal = get_object_or_404(Goal, id=goal_id, user=request.user)
-        request.data['goal'] = goal.id
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        goal = get_object_or_404(Goal, id=goal_id, user=user)
+
         form = SubGoalForm(request.data)
         if form.is_valid():
-            subgoal = form.save()
-            return Response({'detail':"Subgoal created successfully", 'subgoal_id': subgoal.id}, status=status.HTTP_201_CREATED)
+            subgoal = form.save(commit=False)
+            subgoal.goal = goal
+            subgoal.title = request.data['title']
+            subgoal.save()
+            subgoal_id = subgoal.id
+            return Response({'detail':"Subgoal created successfully", 'subgoal_id': subgoal_id}, status=status.HTTP_201_CREATED)
         return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 세부 목표 수정
