@@ -12,18 +12,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=CustomUser.objects.all())])
     phonenumber = serializers.CharField(required=True)
-    profileImage = serializers.ImageField(write_only=True, required=False)
+    profileImage = serializers.ImageField(required=False)
 
     class Meta: 
         model = CustomUser
         fields = ('username', 'password', 'email', 'phonenumber', 'profileImage')
 
     def create(self, validated_data): 
+        profile_image = validated_data.get('profileImage')
+        if profile_image is None:
+            profile_image = 'default.png'
         user = CustomUser.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             phonenumber=validated_data['phonenumber'],
-            profileImage=validated_data.get('profileImage', None),
+            profileImage=profile_image,
         )
         user.set_password(validated_data['password'])
         user.save()

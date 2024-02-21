@@ -19,7 +19,7 @@ class RegisterView(generics.CreateAPIView):
 #로그인
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
-    authentication_classes = [BearerTokenAuthentication]
+    # authentication_classes = [BearerTokenAuthentication]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
