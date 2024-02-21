@@ -39,7 +39,7 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(**data) 
         if user:
             token = Token.objects.get(user=user)
-            return token
+            return {'token': token, 'username': user.username} 
         raise serializers.ValidationError( #User가 None인 경우
             {"error": "해당하는 사용자가 존재하지 않습니다."})
 
