@@ -48,12 +48,14 @@ def create_goal_all(request):
     print(request.data)
     if request.method == "POST":
         user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        created_goals_ids = []
         for key, value in request.data.items():
             if key.startswith('title'):
                 goal = Goal.objects.create(user=user, title=value)
+                created_goals_ids.append(goal.id)
                 goal.save()
 
-        return Response({'detail': 'Goals created successfully'}, status=status.HTTP_201_CREATED)
+        return Response({'detail': 'Goals created successfully', 'id' : created_goals_ids}, status=status.HTTP_201_CREATED)
     return Response({"error": "Invalid request method"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
 
