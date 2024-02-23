@@ -8,6 +8,7 @@ from rest_framework.authtoken.models import Token
 from join.authentication import BearerTokenAuthentication
 from django.shortcuts import get_object_or_404
 from join.models import CustomUser
+from .serializers import SubGoalSerializer
 
 # 전체 목표, 세부 목표 불러오기 + 성공 백분률
 @authentication_classes([BearerTokenAuthentication])
@@ -144,9 +145,10 @@ def delete_subgoal(request, subgoal_id):
         return Response({'detail': "Subgoal not found"}, status=status.HTTP_404_NOT_FOUND)
     
 @api_view(['GET'])
-def completed_subgoals(request):
+def completed_subgoals(request, username):
     if request.method == 'GET':
-        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        user = get_object_or_404(CustomUser, username=username)
+        goals = Goal.objects.filter(user=user)
         completed_subgoals = SubGoal.objects.filter(goal__user=user, is_completed=True)
         
         serialized_subgoals = [{'id': subgoal.id, 'goal_id': subgoal.goal.id, 'title': subgoal.title, 'is_completed': subgoal.is_completed} for subgoal in completed_subgoals]
@@ -170,7 +172,16 @@ def goals_by_username(request, username):
         user = get_object_or_404(CustomUser, username=username)
 
         goals = Goal.objects.filter(user=user)
-
-        serialized_goals = [{'id': goal.id, 'title': goal.title} for goal in goals]
+        serialized_goals = []
+        for goal in goals:
+            subgoals = SubGoal.objects.filter(goal=goal)
+            serialized_subgoals = SubGoalSerializer(subgoals, many=True).data
+            
+            serialized_goal = {
+                'id': goal.id,
+                'title': goal.title,
+                'subgoals': serialized_subgoals
+            }
+            serialized_goals.append(serialized_goal)
 
         return Response(serialized_goals)
