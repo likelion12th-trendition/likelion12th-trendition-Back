@@ -70,16 +70,16 @@ class MyPageView(APIView):
         
 #내가 팔로우하는 유저 목록
 class FollowingUsersView(APIView):
-    authentication_classes = [BearerTokenAuthentication]
-    def get(self, request, *args, **kwargs):
-        following_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in request.user.following.all()] 
+    def get(self, request, username, *args, **kwargs):
+        user = get_object_or_404(CustomUser, username=username)
+        following_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in user.following.all()] 
         return Response(following_users)
 
 #나를 팔로우하는 유저 목록
 class FollowerUsersView(APIView):
-    authentication_classes = [BearerTokenAuthentication]
-    def get(self, request, *args, **kwargs):
-        follower_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in request.user.follower.all()] 
+    def get(self, request, username, *args, **kwargs):
+        user = get_object_or_404(CustomUser, username=username)
+        follower_users = [{'username': user.username, 'profileImage': user.profileImage.url} for user in user.follower.all()] 
         return Response(follower_users)
     
 #검색
