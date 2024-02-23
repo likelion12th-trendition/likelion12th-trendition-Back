@@ -7,6 +7,7 @@ from rest_framework.decorators import authentication_classes
 from rest_framework.authtoken.models import Token
 from join.authentication import BearerTokenAuthentication
 from django.shortcuts import get_object_or_404
+from join.models import CustomUser
 
 # 전체 목표, 세부 목표 불러오기 + 성공 백분률
 @authentication_classes([BearerTokenAuthentication])
@@ -124,3 +125,35 @@ def delete_subgoal(request, subgoal_id):
         return Response({'detail': 'Subgoal deleted successfully'})
     except SubGoal.DoesNotExist:
         return Response({'detail': "Subgoal not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+@api_view(['GET'])
+def completed_subgoals(request):
+    if request.method == 'GET':
+        user = Token.objects.get(key=request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]).user
+        completed_subgoals = SubGoal.objects.filter(goal__user=user, is_completed=True)
+        
+        serialized_subgoals = [{'id': subgoal.id, 'goal_id': subgoal.goal.id, 'title': subgoal.title, 'is_completed': subgoal.is_completed} for subgoal in completed_subgoals]
+        
+        return Response(serialized_subgoals)
+    
+@api_view(['GET'])
+def subgoals_by_goal(request, goal_id):
+    if request.method == 'GET':
+        goal = get_object_or_404(Goal, id=goal_id)
+
+        subgoals = SubGoal.objects.filter(goal=goal)
+
+        serialized_subgoals = [{'id': subgoal.id, 'title': subgoal.title, 'is_completed': subgoal.is_completed} for subgoal in subgoals]
+
+        return Response(serialized_subgoals)
+    
+@api_view(['GET'])
+def goals_by_username(request, username):
+    if request.method == 'GET':
+        user = get_object_or_404(CustomUser, username=username)
+
+        goals = Goal.objects.filter(user=user)
+
+        serialized_goals = [{'id': goal.id, 'title': goal.title} for goal in goals]
+
+        return Response(serialized_goals)
