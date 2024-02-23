@@ -16,5 +16,5 @@ urlpatterns = [
     path('subgoal/delete/<int:subgoal_id>', delete_subgoal),
     path('subgoal/completed/<str:username>', completed_subgoals),
     path('subgoal/bygaol/<int:goal_id>', subgoals_by_goal),
-    path('goal/<str:username>', goals_by_username),
+    path('goal/<str:username>/', goals_by_username),
 ]
